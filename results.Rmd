@@ -1,0 +1,74 @@
+---
+title: "ESG-topic"
+date: "`r Sys.Date()`"
+author: Marcell Granat & Balazs Csillag
+output:
+  rmdformats::robobook:
+    code_folding: hide
+    self_contained: false
+    thumbnails: true
+    lightbox: true
+    gallery: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r packages, warning = FALSE, message = FALSE}
+library(tidyverse)
+library(magrittr)
+library(lubridate)
+library(DT)
+library(granatlib) # < github
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, dpi = 400, error = TRUE)
+
+theme_set(theme_minimal())
+```
+
+```{r}
+read_table("raw/All Reuters News 2019-08-28.txt")
+```
+
+```{r}
+df <- jsonlite::read_json("raw/All Reuters News 2019-08-28.txt")
+```
+
+```{r}
+str(df)
+```
+
+```{r}
+items <- df$Items
+```
+
+```{r}
+df <- jsonlite::read_json("raw/All Reuters News 2019-08-28.txt") %>% 
+  .[["Items"]] %>% 
+  enframe(name = NULL, value = "item") %>% 
+  mutate(
+    id  = row_number(),
+    item = map(item, enframe)
+  ) %>%
+  unnest() %>% 
+  pivot_wider() %T>% 
+  {data_header <<- names(.$data[[1]])} %>% 
+  select(id, data) %>% 
+  unnest() %>% 
+  group_by(id) %>% 
+  mutate(name = row_number()) %>% 
+  pivot_wider(values_from = data) %>% 
+  unnest(2:11) %>% 
+  set_names(c("id", data_header)) %>% 
+  ungroup() %>% 
+  janitor::clean_names()
+```
+
+```{r}
+df %>% 
+  count(version_created) %>% 
+  filter(str_starts(version_created, "2019-08-28", negate = TRUE))
+```
+
+
